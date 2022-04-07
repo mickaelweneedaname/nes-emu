@@ -58,6 +58,7 @@ impl Device for Joypad {
         self.is_strobe_on = *self.memory & 1 == 1;
         if self.is_strobe_on {
             self.current_button_mask = Button::A
+        } else {
         }
     }
 

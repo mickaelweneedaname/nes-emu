@@ -9,12 +9,21 @@ bitflags = "1.3"
 gloo-render = "0.1.0"
 lazy_static = "1.4.0"
 wasm-bindgen = "0.2.79"
+wasm-bindgen-futures = "0.4"
+gloo-timers="0.2.3"
 yew = "0.19.3"
 js-sys = "0.3.56"
+log = "0.4.6"
+wasm-logger = "0.2.0"
+rand = "0.8.5"
+getrandom = { version = "0.2", features = ["js"] }
+reqwasm = "0.2"
 
 [dependencies.web-sys]
 version = "0.3.56"
 features = [
   'HtmlCanvasElement',
-  'CanvasRenderingContext2d'
+  'CanvasRenderingContext2d',
+  'HtmlDivElement',
+  'HtmlSpanElement'
 ]

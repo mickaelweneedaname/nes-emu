@@ -34,6 +34,7 @@ impl Memory for MemoryMock {
 
 fn create_mock_from_script(script: &str) -> MemoryMock {
     let program = asm_6502::compile(script.to_string(), 0x8000);
+    println!("{:?}", program);
     MemoryMock::new(&program, 0x8000)
 }
 
@@ -75,7 +76,10 @@ fn lda_immediate_and_sta_zero_page() {
            BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() };
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(10, mock.memory[0x0005])
 }
 
@@ -89,7 +93,8 @@ fn lda_absolute_and_sta_absolute() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x1234, 42);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x4321])
 }
@@ -102,7 +107,10 @@ fn ldx_immediate_and_stx_zero_page() {
            BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() };
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(25, mock.memory[0x0009])
 }
 
@@ -116,7 +124,8 @@ fn ldx_absolute_and_stx_absolute() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x2341, 99);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(99, mock.memory[0x3214])
 }
@@ -129,7 +138,10 @@ fn ldy_immediate_and_sty_zero_page() {
            BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() };
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    };
     assert_eq!(33, mock.memory[0x002A])
 }
 
@@ -143,7 +155,8 @@ fn ldy_absolute_and_sty_absolute() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x3412, 89);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(89, mock.memory[0x2143])
 }
@@ -153,7 +166,10 @@ fn bcc_forward() {
     let script = create_branch_forward_test_scipt("BCC", 10);
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(33, mock.memory[0x55])
 }
 
@@ -162,7 +178,10 @@ fn bcc_backward() {
     let script = create_branch_backward_test_scipt("BCC");
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -171,7 +190,10 @@ fn bpl_forward() {
     let script = create_branch_forward_test_scipt("BPL", 10);
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(33, mock.memory[0x55])
 }
 
@@ -180,7 +202,10 @@ fn bpl_backward() {
     let script = create_branch_backward_test_scipt("BPL");
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -189,7 +214,10 @@ fn bvc_forward() {
     let script = create_branch_forward_test_scipt("BVC", 10);
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(33, mock.memory[0x55])
 }
 
@@ -198,7 +226,10 @@ fn bvc_backward() {
     let script = create_branch_backward_test_scipt("BVC");
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -207,7 +238,10 @@ fn bne_forward() {
     let script = create_branch_forward_test_scipt("BNE", 10);
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(33, mock.memory[0x55])
 }
 
@@ -216,7 +250,10 @@ fn bne_backward() {
     let script = create_branch_backward_test_scipt("BNE");
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -232,7 +269,10 @@ forward:
     STY $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -254,7 +294,10 @@ end:
     BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -263,7 +306,10 @@ fn bmi_forward() {
     let script = create_branch_forward_test_scipt("BMI", 10u8.wrapping_neg());
     let mut mock = create_mock_from_script(&script);
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(10u8.wrapping_neg(), mock.memory[0x55])
 }
 
@@ -275,7 +321,10 @@ fn adc_without_carry() {
     STA $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -291,7 +340,10 @@ fn adc_signed_without_carry() {
         .as_ref(),
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(10u8.wrapping_neg(), mock.memory[0x42])
 }
 
@@ -307,7 +359,10 @@ end:
     STA $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -323,7 +378,10 @@ end:
     STA $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42])
 }
 
@@ -335,7 +393,10 @@ fn test_and_1() {
     STA $00"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(0b0000_0000, mock.memory[0x00])
 }
 
@@ -347,7 +408,10 @@ fn test_and_2() {
     STA $00"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(0b0001_0001, mock.memory[0x00])
 }
 
@@ -366,7 +430,10 @@ end:
     BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x1ABC])
 }
 
@@ -386,7 +453,10 @@ end:
     BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x1ABC])
 }
 
@@ -407,7 +477,10 @@ end:
     BRK"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x1ABC])
 }
 
@@ -427,7 +500,8 @@ end:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x05, 0b1010_1010);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b0101_0100, mock.memory[0x10]);
     assert_eq!(42, mock.memory[0x42])
@@ -449,7 +523,8 @@ end:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x05, 0b1010_1010);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b0101_0100, mock.memory[0x10]);
     assert_eq!(42, mock.memory[0x42])
@@ -470,7 +545,8 @@ inferior:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -490,7 +566,8 @@ superior:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -510,7 +587,8 @@ equal:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -530,7 +608,8 @@ inferior:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -550,7 +629,8 @@ superior:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -570,7 +650,8 @@ equal:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -590,7 +671,8 @@ inferior:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -610,7 +692,8 @@ superior:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -630,7 +713,8 @@ equal:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 15);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -651,7 +735,8 @@ equal:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 10);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -672,7 +757,8 @@ equal:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 10);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -693,7 +779,8 @@ equal:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x00, 10);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(42, mock.memory[0x42])
 }
@@ -708,7 +795,8 @@ fn test_eor() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x12, 0b11001100);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b01100110, mock.memory[0x12])
 }
@@ -719,7 +807,8 @@ fn test_inc() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x12, 9);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(10, mock.memory[0x12])
 }
@@ -734,7 +823,8 @@ fn test_inx() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x12, 9);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(10, mock.memory[0x42])
 }
@@ -749,7 +839,8 @@ fn test_iny() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0x12, 9);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(10, mock.memory[0x42])
 }
@@ -770,7 +861,8 @@ carryset:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1010_1011);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b0101_0101, mock.memory[0xAB]);
     assert_eq!(42, mock.memory[0x42])
@@ -790,7 +882,8 @@ carryset:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1010_1011);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b0101_0101, mock.memory[0xAB]);
     assert_eq!(42, mock.memory[0x42])
@@ -806,7 +899,8 @@ fn test_ora() {
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1111_0000);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b1111_1111, mock.memory[0xBA]);
 }
@@ -818,7 +912,10 @@ fn test_pha() {
     PHA"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x01FF]);
 }
 
@@ -832,7 +929,10 @@ fn test_pla() {
     STA $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42]);
 }
 
@@ -853,7 +953,8 @@ end:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1010_1010);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b0101_0101, mock.memory[0x42]);
     assert_eq!(42, mock.memory[0xAB]);
@@ -874,7 +975,8 @@ end:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1010_1010);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b0101_0101, mock.memory[0xAB]);
     assert_eq!(42, mock.memory[0x42]);
@@ -898,7 +1000,8 @@ end:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1010_1010);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b1101_0101, mock.memory[0x42]);
     assert_eq!(42, mock.memory[0xAB]);
@@ -920,7 +1023,8 @@ end:
     let mut cpu = Cpu::new(&mut mock);
     unsafe {
         mock.mem_write_u8(0xAB, 0b1010_1010);
-        cpu.run()
+        cpu.reset();
+        cpu.run_loop()
     }
     assert_eq!(0b1101_0101, mock.memory[0xAB]);
     assert_eq!(42, mock.memory[0x42]);
@@ -934,7 +1038,10 @@ fn test_tax() {
     STX $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42]);
 }
 
@@ -946,7 +1053,10 @@ fn test_txa() {
     STA $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42]);
 }
 
@@ -958,7 +1068,10 @@ fn test_tay() {
     STY $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42]);
 }
 
@@ -970,7 +1083,10 @@ fn test_tya() {
     STA $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(42, mock.memory[0x42]);
 }
 
@@ -994,7 +1110,10 @@ fn test_txs() {
     STA $43"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(30, mock.memory[0x42]);
     assert_eq!(10, mock.memory[0x43]);
 }
@@ -1007,6 +1126,34 @@ fn test_tsx() {
     STX $42"#,
     );
     let mut cpu = Cpu::new(&mut mock);
-    unsafe { cpu.run() }
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
     assert_eq!(0xFE, mock.memory[0x42]);
+}
+
+#[test]
+fn test_jsr_jmp_rts() {
+    let mut mock = create_mock_from_script(
+        r#"JSR func
+    LDA #42
+    STA $42
+    jmp end
+    LDA #99
+    STA $42
+func:
+    LDX #42
+    STX $4242
+    RTS
+end:
+    BRK"#,
+    );
+    let mut cpu = Cpu::new(&mut mock);
+    unsafe {
+        cpu.reset();
+        cpu.run_loop()
+    }
+    assert_eq!(42, mock.memory[0x42]);
+    assert_eq!(42, mock.memory[0x4242]);
 }

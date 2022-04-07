@@ -5,7 +5,7 @@ use instruction::INSTRUCTION_MAP;
 
 use crate::traits::Memory;
 
-const PROGRAM_POINTER: u16 = 0xFFFC;
+pub const PROGRAM_POINTER: u16 = 0xFFFC;
 const STACK_ADDR_HI: register::StackPointer = 0x01;
 pub const STACK_TOP: register::StackPointer = 0xFF;
 const IMPLICIT_MODE_ADDR: u16 = u16::MAX;
@@ -33,95 +33,113 @@ impl Cpu {
         }
     }
 
+    pub fn set_mem(&mut self, memory: *mut dyn Memory) {
+        self.memory = memory;
+    }
+
+    #[allow(clippy::missing_safety_doc)]
+    pub unsafe fn reset(&mut self) {
+        self.counter = (*self.memory).mem_read_u16(PROGRAM_POINTER);
+        self.stack_pointer = STACK_TOP;
+        self.a = 0;
+        self.x = 0;
+        self.y = 0;
+        self.status = register::Status::INITIAL_STATE;
+    }
+
+    #[allow(clippy::missing_safety_doc)]
+    pub unsafe fn run_loop(&mut self) {
+        while self.run() {}
+    }
+
     #[allow(clippy::missing_safety_doc)]
     #[rustfmt::skip]
-    pub unsafe fn run(&mut self)
+    pub unsafe fn run(&mut self) -> bool
     {
-        self.counter = (*self.memory).mem_read_u16(PROGRAM_POINTER);
-        loop {
-            let instruct = INSTRUCTION_MAP.get(&(*self.memory).mem_read_u8(self.counter)).unwrap();
-            if instruct.opcode == 0 {
-                self.brk();
-                break
-            }
-            self.counter += 1;
-            let previous_position = self.counter;
-            let addr = self.get_operand_address(&instruct.mode);
-            let operand = if addr != IMPLICIT_MODE_ADDR {
-                (*self.memory).mem_read_u8(addr)
-            } else {
-                0
-            };
-            match instruct.name {
-                instruction::Name::Adc => self.adc(operand),//tested
-                instruction::Name::And => self.and(operand),//tested
-                instruction::Name::Asl if instruct.mode == instruction::Mode::Accumulator
-                                       => self.asl_a(),
-                instruction::Name::Asl => self.asl(operand, addr),
-                instruction::Name::Bit => self.bit(operand),
-                instruction::Name::Bcc => self.bcc(addr),//tested
-                instruction::Name::Bcs => self.bcs(addr),//tested
-                instruction::Name::Beq => self.beq(addr),//tested
-                instruction::Name::Bmi => self.bmi(addr),//tested
-                instruction::Name::Bne => self.bne(addr),//tested
-                instruction::Name::Bpl => self.bpl(addr),//tested
-                instruction::Name::Bvc => self.bvc(addr),//tested
-                instruction::Name::Bvs => self.bvs(addr),//tested
-                instruction::Name::Clc => self.clc(),//tested
-                instruction::Name::Cld => self.cld(),
-                instruction::Name::Cli => self.cli(),
-                instruction::Name::Clv => self.clv(),//tested
-                instruction::Name::Cmp => self.cmp(operand),//tested
-                instruction::Name::Cpx => self.cpx(operand),//tested 
-                instruction::Name::Cpy => self.cpy(operand),//tested
-                instruction::Name::Dec => self.dec(operand, addr),//tested
-                instruction::Name::Dex => self.dex(),//tested
-                instruction::Name::Dey => self.dey(),//tested
-                instruction::Name::Eor => self.eor(operand), //tested
-                instruction::Name::Inc => self.inc(operand, addr), //tested
-                instruction::Name::Inx => self.inx(),//tested
-                instruction::Name::Iny => self.iny(),//tested
-                instruction::Name::Jmp => self.jmp(addr),
-                instruction::Name::Jsr => self.jsr(addr),
-                instruction::Name::Lda => self.lda(operand),//tested
-                instruction::Name::Ldx => self.ldx(operand),//tested
-                instruction::Name::Ldy => self.ldy(operand),//tested
-                instruction::Name::Lsr if instruct.mode == instruction::Mode::Accumulator
-                                       => self.lsr_a(),//tested
-                instruction::Name::Lsr => self.lsr(operand, addr),//tested
-                instruction::Name::Nop => self.nop(),
-                instruction::Name::Ora => self.ora(operand),//tested
-                instruction::Name::Pha => self.pha(), //tested
-                instruction::Name::Php => self.php(),
-                instruction::Name::Pla => self.pla(), //tested
-                instruction::Name::Plp => self.plp(),
-                instruction::Name::Rol if instruct.mode == instruction::Mode::Accumulator
-                                       => self.rol_a(), //tested
-                instruction::Name::Rol => self.rol(operand, addr),//tested
-                instruction::Name::Ror if instruct.mode == instruction::Mode::Accumulator
-                                       => self.ror_a(),//tested
-                instruction::Name::Ror => self.ror(operand, addr),//tested
-                instruction::Name::Rti => self.rti(),
-                instruction::Name::Rts => self.rts(),
-                instruction::Name::Sbc => self.sbc(operand),
-                instruction::Name::Sec => self.sec(),//tested
-                instruction::Name::Sed => self.sed(),
-                instruction::Name::Sei => self.sei(),
-                instruction::Name::Sta => self.sta(addr),//tested
-                instruction::Name::Stx => self.stx(addr),//tested
-                instruction::Name::Sty => self.sty(addr),//testes,
-                instruction::Name::Tax => self.tax(),//tested
-                instruction::Name::Tay => self.tay(),//tested
-                instruction::Name::Tsx => self.tsx(),
-                instruction::Name::Txa => self.txa(),//tested
-                instruction::Name::Txs => self.txs(),
-                instruction::Name::Tya => self.tya(),//tested
-                _ => todo!()
-            }
-            if !self.has_branched(previous_position) {
-                self.counter += u16::from(instruct.len - 1);
-            }
+        let opcode = &(*self.memory).mem_read_u8(self.counter);
+        let instruct = INSTRUCTION_MAP.get(opcode).unwrap();
+        if instruct.opcode == 0 {
+            self.brk();
+            return false;
         }
+        self.counter += 1;
+        let previous_position = self.counter;
+        let addr = self.get_operand_address(&instruct.mode);
+        let operand = if addr != IMPLICIT_MODE_ADDR {
+            (*self.memory).mem_read_u8(addr)
+        } else {
+            0
+        };
+        match instruct.name {
+            instruction::Name::Adc => self.adc(operand),//tested
+            instruction::Name::And => self.and(operand),//tested
+            instruction::Name::Asl if instruct.mode == instruction::Mode::Accumulator
+                                    => self.asl_a(),
+            instruction::Name::Asl => self.asl(operand, addr),
+            instruction::Name::Bit => self.bit(operand),
+            instruction::Name::Bcc => self.bcc(addr),//tested
+            instruction::Name::Bcs => self.bcs(addr),//tested
+            instruction::Name::Beq => self.beq(addr),//tested
+            instruction::Name::Bmi => self.bmi(addr),//tested
+            instruction::Name::Bne => self.bne(addr),//tested
+            instruction::Name::Bpl => self.bpl(addr),//tested
+            instruction::Name::Bvc => self.bvc(addr),//tested
+            instruction::Name::Bvs => self.bvs(addr),//tested
+            instruction::Name::Clc => self.clc(),//tested
+            instruction::Name::Cld => self.cld(),
+            instruction::Name::Cli => self.cli(),
+            instruction::Name::Clv => self.clv(),//tested
+            instruction::Name::Cmp => self.cmp(operand),//tested
+            instruction::Name::Cpx => self.cpx(operand),//tested 
+            instruction::Name::Cpy => self.cpy(operand),//tested
+            instruction::Name::Dec => self.dec(operand, addr),//tested
+            instruction::Name::Dex => self.dex(),//tested
+            instruction::Name::Dey => self.dey(),//tested
+            instruction::Name::Eor => self.eor(operand), //tested
+            instruction::Name::Inc => self.inc(operand, addr), //tested
+            instruction::Name::Inx => self.inx(),//tested
+            instruction::Name::Iny => self.iny(),//tested
+            instruction::Name::Jmp => self.jmp(addr),
+            instruction::Name::Jsr => self.jsr(addr),
+            instruction::Name::Lda => self.lda(operand),//tested
+            instruction::Name::Ldx => self.ldx(operand),//tested
+            instruction::Name::Ldy => self.ldy(operand),//tested
+            instruction::Name::Lsr if instruct.mode == instruction::Mode::Accumulator
+                                    => self.lsr_a(),//tested
+            instruction::Name::Lsr => self.lsr(operand, addr),//tested
+            instruction::Name::Nop => self.nop(),
+            instruction::Name::Ora => self.ora(operand),//tested
+            instruction::Name::Pha => self.pha(), //tested
+            instruction::Name::Php => self.php(),
+            instruction::Name::Pla => self.pla(), //tested
+            instruction::Name::Plp => self.plp(),
+            instruction::Name::Rol if instruct.mode == instruction::Mode::Accumulator
+                                    => self.rol_a(), //tested
+            instruction::Name::Rol => self.rol(operand, addr),//tested
+            instruction::Name::Ror if instruct.mode == instruction::Mode::Accumulator
+                                    => self.ror_a(),//tested
+            instruction::Name::Ror => self.ror(operand, addr),//tested
+            instruction::Name::Rti => self.rti(),
+            instruction::Name::Rts => self.rts(),
+            instruction::Name::Sbc => self.sbc(operand),
+            instruction::Name::Sec => self.sec(),//tested
+            instruction::Name::Sed => self.sed(),
+            instruction::Name::Sei => self.sei(),
+            instruction::Name::Sta => self.sta(addr),//tested
+            instruction::Name::Stx => self.stx(addr),//tested
+            instruction::Name::Sty => self.sty(addr),//testes,
+            instruction::Name::Tax => self.tax(),//tested
+            instruction::Name::Tay => self.tay(),//tested
+            instruction::Name::Tsx => self.tsx(),
+            instruction::Name::Txa => self.txa(),//tested
+            instruction::Name::Txs => self.txs(),
+            instruction::Name::Tya => self.tya(),//tested
+            _ => todo!()
+        }
+        if !self.has_branched(previous_position) {
+            self.counter += u16::from(instruct.len - 1);
+        }
+        return true;
     }
 
     unsafe fn get_operand_address(&mut self, mode: &instruction::Mode) -> u16 {
@@ -290,11 +308,13 @@ impl Cpu {
     }
 
     fn dex(&mut self) {
-        self.x = self.x.wrapping_sub(1)
+        self.x = self.x.wrapping_sub(1);
+        self.set_negative_and_zero_flags(self.x);
     }
 
     fn dey(&mut self) {
-        self.y = self.y.wrapping_sub(1)
+        self.y = self.y.wrapping_sub(1);
+        self.set_negative_and_zero_flags(self.y);
     }
 
     fn eor(&mut self, operand: u8) {
@@ -310,10 +330,12 @@ impl Cpu {
 
     fn inx(&mut self) {
         self.x = self.x.wrapping_add(1);
+        self.set_negative_and_zero_flags(self.x);
     }
 
     fn iny(&mut self) {
         self.y = self.y.wrapping_add(1);
+        self.set_negative_and_zero_flags(self.y);
     }
 
     fn jmp(&mut self, addr: u16) {
@@ -321,7 +343,7 @@ impl Cpu {
     }
 
     unsafe fn jsr(&mut self, addr: u16) {
-        self.push_u16_on_stack(self.counter);
+        self.push_u16_on_stack(self.counter.wrapping_add(1));
         self.branch(addr);
     }
 
@@ -373,6 +395,7 @@ impl Cpu {
 
     unsafe fn pla(&mut self) {
         self.a = self.pull_u8_from_stack();
+        self.set_negative_and_zero_flags(self.a);
     }
 
     unsafe fn plp(&mut self) {
@@ -441,11 +464,11 @@ impl Cpu {
 
     unsafe fn rts(&mut self) {
         let addr = self.pull_u16_from_stack().wrapping_add(1);
-        self.branch(addr)
+        self.branch(addr);
     }
 
     fn sbc(&mut self, operand: u8) {
-        self.adc(operand.wrapping_neg().wrapping_sub(1)); // ? I kindof get the why But i don't really understand it ... oO?
+        self.adc(operand.wrapping_neg().wrapping_sub(1));
     }
 
     fn sec(&mut self) {
@@ -474,10 +497,12 @@ impl Cpu {
 
     fn tax(&mut self) {
         self.x = self.a;
+        self.set_negative_and_zero_flags(self.x);
     }
 
     fn tay(&mut self) {
         self.y = self.a;
+        self.set_negative_and_zero_flags(self.y);
     }
 
     unsafe fn tsx(&mut self) {
@@ -487,6 +512,7 @@ impl Cpu {
 
     fn txa(&mut self) {
         self.a = self.x;
+        self.set_negative_and_zero_flags(self.a);
     }
 
     unsafe fn txs(&mut self) {
@@ -495,6 +521,7 @@ impl Cpu {
 
     fn tya(&mut self) {
         self.a = self.y;
+        self.set_negative_and_zero_flags(self.a);
     }
 
     fn set_negative_and_zero_flags(&mut self, operation_res: u8) {
